@@ -72,6 +72,27 @@ Run `/reload` in a running session. The repository also installs in Claude Code
 (`claude plugin marketplace add githubhjs/chipagent-mod-agent-teams`), where the
 same file protocol works with Claude's subagents.
 
+### Check that ChipAgents loaded it
+
+Installation is confirmed on ChipAgents 0.42.3 (Josh_HUANG: `plugin list` shows
+the plugin and its agents, commands and skills are in the install directory).
+Whether ChipAgents **loads Claude-format agents and commands into a session**
+has not been confirmed yet. Two quick checks, with the same `chipagents` binary
+that runs your sessions:
+
+```bash
+# 1. Does the plugin command resolve? (batch mode runs custom commands with --command)
+chipagents batch --command "team-status" --output /tmp/agent-teams-cmd.txt; echo "rc=$?"
+
+# 2. Can the agent see the profiles and commands?
+chipagents batch --prompt "List the slash commands and subagent profiles available to you. Names only." \
+  --output /tmp/agent-teams-caps.txt
+grep -E 'team-review|team-debug|team-feature|team-reviewer|team-debugger|team-implementer' /tmp/agent-teams-caps.txt
+```
+
+If the command is not found or the names are missing, the files are installed but
+not loaded; please report it with the output.
+
 ## Usage
 
 ```

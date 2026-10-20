@@ -80,6 +80,22 @@ chipagents plugin install agent-teams@chipagent-mod-agent-teams
 
 如果是在 session 裡安裝，裝完執行 `/reload`。這個 repo 在 Claude Code 也能安裝（`claude plugin marketplace add githubhjs/chipagent-mod-agent-teams`），同樣的檔案協定可以搭配 Claude 的 subagent 使用。
 
+### 確認 ChipAgents 真的載入了
+
+已在 ChipAgents 0.42.3 上確認安裝成功（Josh_HUANG 實測：`plugin list` 有列出這個 plugin，安裝目錄裡也有它的 agents、commands 和 skills）。但 ChipAgents 會不會**把 Claude 格式的 agents 和 commands 載入 session**，還沒確認。可以用以下兩個方法快速檢查，記得使用和 session 相同的 `chipagents`：
+
+```bash
+# 1. plugin 的指令找得到嗎？（batch mode 可以用 --command 執行自訂指令）
+chipagents batch --command "team-status" --output /tmp/agent-teams-cmd.txt; echo "rc=$?"
+
+# 2. agent 看得到這些 profile 和指令嗎？
+chipagents batch --prompt "List the slash commands and subagent profiles available to you. Names only." \
+  --output /tmp/agent-teams-caps.txt
+grep -E 'team-review|team-debug|team-feature|team-reviewer|team-debugger|team-implementer' /tmp/agent-teams-caps.txt
+```
+
+如果找不到指令，或清單裡沒有這些名稱，代表檔案有裝上但沒有被載入，請附上輸出回報。
+
 ## 使用方式
 
 ```
