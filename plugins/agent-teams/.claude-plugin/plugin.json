@@ -1,0 +1,10 @@
+{
+  "name": "agent-teams",
+  "version": "1.0.0-chipagents",
+  "description": "Orchestrate multi-agent teams for parallel RTL/DV review, hypothesis-driven debugging, and coordinated feature development with ChipAgents subagents or chip-swarm processes, using a file-based team protocol",
+  "author": {
+    "name": "wshobson (ChipAgents port: Josh_HUANG)"
+  },
+  "homepage": "https://github.com/wshobson/agents",
+  "license": "MIT"
+}

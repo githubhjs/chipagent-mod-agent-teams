@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "chipagent-mod-agent-teams",
+  "description": "ChipAgents port of the agent-teams plugin from wshobson/agents: parallel RTL/DV review, competing-hypothesis debugging and wave-based feature development, coordinated through a file-based team protocol",
+  "owner": {
+    "name": "Josh_HUANG",
+    "email": "HuangJS@Gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "agent-teams",
+      "source": "./plugins/agent-teams",
+      "description": "Multi-agent RTL/DV review, hypothesis-driven debugging and parallel feature development for ChipAgents subagents and chip-swarm, using a run directory instead of team messaging",
+      "author": {
+        "name": "wshobson (ChipAgents port: Josh_HUANG)"
+      },
+      "category": "development"
+    }
+  ]
+}
