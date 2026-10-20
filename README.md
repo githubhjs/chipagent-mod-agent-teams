@@ -19,6 +19,27 @@ Six skills carry the methods: multi-reviewer patterns, parallel debugging,
 parallel feature development, task coordination, the file-based team protocol
 and team composition presets.
 
+## Which one to use
+
+Pick the mode first: picking the wrong one wastes the most time.
+
+| You want | Use | How |
+|---|---|---|
+| several strategies competing, the winner kept | `chip-swarm race` | separate processes, a script decides |
+| several hypotheses checked independently, then merged | `chip-swarm investigate` | read-only investigators plus one merge run |
+| several independent tasks in parallel | `chip-swarm fanout` | one worktree each |
+| a team inside the current session | [agent-teams](https://github.com/githubhjs/chipagent-mod-agent-teams) | subagents, no new processes |
+| explore, design and review one feature | [feature-dev](https://github.com/githubhjs/chipagent-mod-feature-dev) | parallel exploration, then design |
+
+The key difference: [chip-swarm](https://github.com/githubhjs/chipagent-mod-swarm)
+starts **real separate processes**, every team has its own context, and a
+script decides the result. agent-teams and feature-dev run inside the current
+session and share its context.
+
+chip-swarm is a CLI, not a plugin: it has no marketplace.json or plugin.json.
+Put `bin/chip-swarm` on `PATH`. agent-teams and feature-dev are Claude-format
+plugins, installed with `--type claude`.
+
 ## How the team works in ChipAgents
 
 Upstream relies on Claude Code's experimental Agent Teams (`TeamCreate`,
@@ -109,7 +130,8 @@ implementer starts.
 
 ## Notes
 
-- **Not yet run inside real ChipAgents.** The plugin validates with
+- **Installed on ChipAgents 0.42.3 but not yet run there** (see the field
+  report below). The plugin validates with
   `claude plugin validate --strict`; how ChipAgents dispatches subagents, and
   whether it runs several at once, depends on ChipAgents. The commands dispatch
   a wave together when that is supported and one after another otherwise.
@@ -121,6 +143,42 @@ implementer starts.
 
 All changes per file are listed in [PORTING.md](PORTING.md) (upstream commit
 `0874a27`).
+
+## Field report: ChipAgents 0.42.3 (2026-10-20)
+
+Installed and inspected by Josh_HUANG on a CentOS 8 machine:
+
+| plugin | agents | commands | skills |
+|---|---|---|---|
+| agent-teams | 4 | 5 | 6 |
+| feature-dev | 3 | 1 | 0 |
+
+- Both are Claude-format marketplaces, added with `--type claude` and then
+  installed; `plugin list` shows both.
+- **Neither uses a hook**: no hooks.toml, no hooks.json, no agent hook, no
+  JSON block, no post_turn. Every silent failure mode in the
+  [hook mechanics notes](https://github.com/githubhjs/chipagents-loop-kit/blob/main/docs/chipagents-hook-mechanics.md)
+  is hook-related, so these two avoid all of them by using only agents and
+  commands.
+- A search for the Claude-only `TeamCreate` and `SendMessage` found 5 hits.
+  Each was checked: all are in documentation explaining what upstream used
+  and that the shared run directory replaces it; the implementation has
+  none. The port is clean.
+
+Not verified:
+
+- **Whether the agents and commands are actually loaded into a session.**
+  Both plugins are installed and listed, and their files are in the install
+  directory, but `installed.json` records only enabled, format and path, not
+  agents, commands or skills. Files on disk are not proof of loading; use the
+  check in [Check that ChipAgents loaded it](#check-that-chipagents-loaded-it).
+- **Real runs** of the commands. Only installation and structure were checked.
+- Whether ChipAgents runs several subagents at the same time. A subagent's
+  turn does trigger `post_turn` hooks but does not appear in the run log, so
+  it can only be observed through side effects; concurrency itself was not
+  measured. If you need guaranteed parallelism, use
+  [chip-swarm](https://github.com/githubhjs/chipagent-mod-swarm), whose teams
+  are separate processes (its README has the measured run times).
 
 ## Related
 

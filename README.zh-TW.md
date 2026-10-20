@@ -20,6 +20,22 @@
 - 檔案式團隊協定
 - 團隊組成範本
 
+## 該用哪一個
+
+先選對模式，這一步選錯最浪費時間。
+
+| 你要的 | 用哪個 | 怎麼做到 |
+|---|---|---|
+| 多種策略競賽，勝者出線 | `chip-swarm race` | 獨立行程，腳本裁決 |
+| 多個假設獨立查證再合流 | `chip-swarm investigate` | 唯讀調查者＋合流 |
+| 多個獨立任務並行 | `chip-swarm fanout` | 各自 worktree |
+| 團隊在同一 session 內 | [agent-teams](https://github.com/githubhjs/chipagent-mod-agent-teams) | 不開新行程，用 subagent |
+| 探索／設計／審查一個功能 | [feature-dev](https://github.com/githubhjs/chipagent-mod-feature-dev) | 平行探索再設計 |
+
+關鍵差別：[chip-swarm](https://github.com/githubhjs/chipagent-mod-swarm) 開的是**真的獨立行程**，每隊有自己的 context，結果由腳本判定；agent-teams 和 feature-dev 在當前 session 內跑，共用同一份 context。
+
+chip-swarm 是 CLI，不是 plugin：它沒有 marketplace.json 也沒有 plugin.json，把 `bin/chip-swarm` 放進 `PATH` 就好。agent-teams 和 feature-dev 是 Claude 格式的 plugin，用 `--type claude` 安裝。
+
 ## 在 ChipAgents 裡團隊怎麼運作
 
 原版依賴 Claude Code 實驗性的 Agent Teams 功能（`TeamCreate`、`SendMessage`、共用 task list），ChipAgents 沒有這些。這個移植版改用一個**run 目錄**，所有 agent 都讀寫這裡：
@@ -110,11 +126,30 @@ grep -E 'team-review|team-debug|team-feature|team-reviewer|team-debugger|team-im
 
 ## 注意事項
 
-- **還沒在真正的 ChipAgents 裡跑過。** 已通過 `claude plugin validate --strict`。ChipAgents 怎麼派出 subagent、能不能同時跑多個，取決於 ChipAgents 本身。指令的寫法是：支援的話就同一個 wave 一起派，否則依序派出。
+- **已在 ChipAgents 0.42.3 安裝，但還沒實際跑過**（見下方實跑紀錄）。 已通過 `claude plugin validate --strict`。ChipAgents 怎麼派出 subagent、能不能同時跑多個，取決於 ChipAgents 本身。指令的寫法是：支援的話就同一個 wave 一起派，否則依序派出。
 - **reviewer 和 debugger 是唯讀的**，沒有 Edit/Create 權限。它們用 shell heredoc 寫出自己的 findings 檔；如果你的指令允許清單擋掉這種寫法，就由 lead 把它們回傳的報告存檔。
 - 原版的 `team-spawn` 和 `team-delegate` 已移除，它們的團隊範本併入 team-composition-patterns skill。
 
 每個檔案的修改都列在 [PORTING.md](PORTING.md)（原版 commit `0874a27`）。
+
+## 實跑紀錄：ChipAgents 0.42.3（2026-10-20）
+
+由 Josh_HUANG 在 CentOS 8 機器上安裝並檢查：
+
+| plugin | agents | commands | skills |
+|---|---|---|---|
+| agent-teams | 4 | 5 | 6 |
+| feature-dev | 3 | 1 | 0 |
+
+- 兩個都是 Claude 格式 marketplace，用 `--type claude` 加入後安裝，`plugin list` 都列得出來。
+- **兩個都完全沒有用 hook**：hooks.toml、hooks.json、agent 型 hook、JSON block、post_turn 全部是 0。這點很重要：[hook 機制筆記](https://github.com/githubhjs/chipagents-loop-kit/blob/main/docs/chipagents-hook-mechanics.md)裡每一種安靜失效模式都和 hook 有關，這兩個只用 agents 與 commands，全部繞開了。
+- Claude 專屬的 `TeamCreate`／`SendMessage` 搜尋命中 5 筆，逐筆看過後確認**全部在文件裡**，是在說明「原版用這些、改用共享目錄取代」，實作中 0 筆。移植是乾淨的。
+
+沒有驗證的事：
+
+- **agents/commands 是否真的被載入 session。** 兩個 plugin 都裝好了、`plugin list` 也列得出來、檔案確實在安裝目錄，但 `installed.json` 只記錄 enabled/format/path，沒有 agents/commands/skills。檔案存在不等於會被載入；請用[確認 ChipAgents 真的載入了](#確認-chipagents-真的載入了)裡的檢查。
+- 指令的**實際執行**。只驗證到安裝與結構。
+- ChipAgents 是否同時跑多個 subagent。subagent 的回合會觸發 `post_turn` hook，但不會出現在 run log，只能靠副作用觀察；並行度本身沒測。需要確定的並行，請用 [chip-swarm](https://github.com/githubhjs/chipagent-mod-swarm)，它的每隊是獨立行程（README 有實測耗時）。
 
 ## 相關 repo
 
